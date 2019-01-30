@@ -1,0 +1,339 @@
+<!DOCTYPE html PUBLIC "-
+<head>
+
+	<link rel="stylesheet" type="text/css" href="css/screen.css" media="screen" />
+	<link href = "css/reset.css" rel = "css/stylesheet" />
+	<title>Game</title>
+	<style>
+	    body{
+	        font-size:9pt;
+	    }
+	    table{
+	        border-collapse: collapse;
+	        border:solid #333 1px;
+	    }
+	    td{
+	        height: 10px;
+	        width: 10px;
+	        font-size: 0px;
+	    }
+	    .filled{
+	        background-color:blue;
+	    }
+	</style>
+	<script>
+	    function $(id){return document.getElementById(id);}
+	    var Snake = {
+	        tbl: null,
+	        body: [],
+	        direction: 0,
+	        timer: null,
+	        speed: 250,
+	        paused: true,
+	        rowCount: 30,
+	        colCount: 30,
+	        init: function(){
+
+	            var colors = ['red','orange','yellow','green','blue','purple','#ccc'];
+
+	            this.tbl = $("main");
+
+	            var x = 0;
+	            var y = 0;
+	            var colorIndex = 0;
+
+	            this.direction = Math.floor(Math.random()*4);
+
+	            for(var row=0;row<this.rowCount;row++){
+	                var tr=this.tbl.insertRow(-1);
+	                for(var col=0;col<this.colCount;col++) {
+	                    var td=tr.insertCell(-1);
+	                }
+	            }
+
+	            for(var i=0; i<10; i++){
+	                x = Math.floor(Math.random()*this.colCount);
+	                y = Math.floor(Math.random()*this.rowCount);
+	                colorIndex = Math.floor(Math.random()*7);
+	                if(!this.isCellFilled(x,y)){
+	                    this.tbl.rows[y].cells[x].style.backgroundColor = colors[colorIndex];
+	                }
+	            }
+
+	            while(true){
+	                x = Math.floor(Math.random()*this.colCount);
+	                y = Math.floor(Math.random()*this.rowCount);
+	                if(!this.isCellFilled(x,y)){
+	                    this.tbl.rows[y].cells[x].style.backgroundColor = "black";
+	                    this.body.push({x:x,y:y,color:'black'});
+	                    break;
+	                }
+	            }
+	            this.paused = true;
+
+	            document.onkeydown= function(e){
+	                if (!e)e=window.event;
+	                switch(e.keyCode | e.which | e.charCode){
+	                  case 13: {
+	                    if(Snake.paused){
+	                      Snake.move();
+	                      Snake.paused = false;
+	                    }
+	                    else{
+
+	                      Snake.pause();
+	                      Snake.paused = true;
+	                    }
+	                    break;
+	                  }
+	                    case 37:{
+
+	                        if(Snake.direction==1){
+	                            break;
+	                        }
+	                        Snake.direction = 3;
+	                        break;
+	                    }
+	                    case 38:{
+
+	                      if(event.ctrlKey){
+	                         Snake.speedUp(-20);
+	                        break;
+	                      }
+	                        if(Snake.direction==2){
+	                            break;
+	                        }
+	                        Snake.direction = 0;
+	                        break;
+	                    }
+	                    case 39:{
+	                        if(Snake.direction==3){
+	                            break;
+	                        }
+	                        Snake.direction = 1;
+	                        break;
+	                    }
+	                    case 40:{
+	                      if(event.ctrlKey){
+	                         Snake.speedUp(20);
+	                        break;
+	                      }
+	                        if(Snake.direction==0){
+	                            break;
+	                        }
+	                        Snake.direction = 2;
+	                        break;
+	                    }
+	                }
+	            }
+	        },
+
+	        move: function(){
+	            this.timer = setInterval(function(){
+	                Snake.erase();
+	                Snake.moveOneStep();
+	                Snake.paint();
+	            }, this.speed);
+	        },
+
+	        moveOneStep: function(){
+	            if(this.checkNextStep()==-1){
+	                clearInterval(this.timer);
+	                alert("Game over!/nPress Restart to continue.");
+	                return;
+	            }
+	            if(this.checkNextStep()==1){
+	                var _point = this.getNextPos();
+	                var _x = _point.x;
+	                var _y = _point.y;
+	                var _color = this.getColor(_x,_y);
+	                this.body.unshift({x:_x,y:_y,color:_color});
+
+	                this.generateDood();
+	                return;
+	            }
+
+	            var point = this.getNextPos();
+	            var color = this.body[0].color;
+
+	            for(var i=0; i<this.body.length-1; i++){
+	              this.body[i].color = this.body[i+1].color;
+	            }
+
+	            this.body.pop();
+	            this.body.unshift({x:point.x,y:point.y,color:color});
+
+	        },
+
+	        pause: function(){
+	          clearInterval(Snake.timer);
+	          this.paint();
+	        },
+	        getNextPos: function(){
+	            var x = this.body[0].x;
+	            var y = this.body[0].y;
+	            var color = this.body[0].color;
+
+	            if(this.direction==0){
+	                y--;
+	            }
+	            else if(this.direction==1){
+	                x++;
+	            }
+	            else if(this.direction==2){
+	                y++;
+	            }
+	            else{
+	                x--;
+	            }
+	            return {x:x,y:y};
+	        },
+
+	        checkNextStep: function(){
+	            var point = this.getNextPos();
+	            var x = point.x;
+	            var y = point.y;
+	            if(x<0||x>=this.colCount||y<0||y>=this.rowCount){
+	                return -1;
+	            }
+	            for(var i=0; i<this.body.length; i++){
+	                if(this.body[i].x==x&&this.body[i].y==y){
+	                    return -1;
+	                }
+	            }
+	            if(this.isCellFilled(x,y)){
+	                return 1;
+	            }
+	            return 0;
+	        },
+
+	        erase: function(){
+	            for(var i=0; i<this.body.length; i++){
+	                this.eraseDot(this.body[i].x, this.body[i].y);
+	            }
+	        },
+
+	        paint: function(){
+	            for(var i=0; i<this.body.length; i++){
+	                this.paintDot(this.body[i].x, this.body[i].y,this.body[i].color);
+	            }
+	        },
+
+	        eraseDot: function(x,y){
+	            this.tbl.rows[y].cells[x].style.backgroundColor = "";
+	        },
+	        paintDot: function(x,y,color){
+	            this.tbl.rows[y].cells[x].style.backgroundColor = color;
+	        },
+
+	        getColor: function(x,y){
+	            return this.tbl.rows[y].cells[x].style.backgroundColor;
+	        },
+
+	        toString: function(){
+	            var str = "";
+	            for(var i=0; i<this.body.length; i++){
+	                str += "x:" + this.body[i].x + " y:" + this.body[i].y + " color:" + this.body[i].color + " - ";
+	            }
+	            return str;
+	        },
+
+	        isCellFilled: function(x,y){
+	            if(this.tbl.rows[y].cells[x].style.backgroundColor == ""){
+	                return false;
+	            }
+	            return true;
+	        },
+
+	        restart: function(){
+	            if(this.timer){
+	                clearInterval(this.timer);
+	            }
+	            for(var i=0; i<this.rowCount;i++){
+	              this.tbl.deleteRow(0);
+	            }
+	            this.body = [];
+	            this.init();
+	            this.speed = 250;
+	        },
+
+	        speedUp: function(time){
+	          if(!this.paused){
+	            if(this.speed+time<10||this.speed+time>2000){
+	              return;
+	            }
+	            this.speed +=time;
+	            this.pause();
+	            this.move();
+	          }
+	        },
+
+	        generateDood: function(){
+	          var colors = ['red','orange','yellow','green','blue','purple','#ccc'];
+	        var x = Math.floor(Math.random()*this.colCount);
+	            var y = Math.floor(Math.random()*this.rowCount);
+	            var colorIndex = Math.floor(Math.random()*7);
+	            if(!this.isCellFilled(x,y)){
+	                this.tbl.rows[y].cells[x].style.backgroundColor = colors[colorIndex];
+	            }
+	        }
+	    };
+	</script>
+</head>
+<body>
+	<div id="content">
+		<p id="top"><a href="login.html">Login</a></p>
+		<div id="logo">
+			<h1><a href="homepage.html">Heart Checker</a></h1>
+		</div>
+		<ul id="menu">
+			<li class="current"><a href="homepage.html">Home</a></li>
+			<li><a href="helpdesk.html">Helpdesk/FAQ</a></li>
+			<li><a href="feedback.html">Feedback Form</a></li>
+			<li><a href="aboutus.html">About Us</a></li>
+			<li><a href="bmi.html">BMI</a></li>
+			<li><a href="about CVD.html">Disease Types</a></li>
+			<li><a href="game.html">Game</a></li>
+		</ul>
+		<div class="line"></div>
+		<div id="pitch">
+			<h1>Game </h1>
+			<br><br>
+			<h3>Have fun!</h3>
+
+		</div>
+		<center><body onload="Snake.init();">
+		<table id="main" border="1" cellspacing="0" cellpadding="0"></table>
+		<input type="button" id="btn" value="Start/Pause" /><br />
+		<input type="button" id="reset" value="Restart" /><br />
+		<input type="button" id="upSpeed" value="Fast" /><br />
+		<input type="button" id="downSpeed" value="Slow" />
+		<script>
+		  $('btn').onclick = function(){
+		    if(Snake.paused){
+		      Snake.move();
+		      Snake.paused = false;
+		    }
+		    else{
+		      Snake.pause();
+		      Snake.paused = true;
+		    }
+		  };
+		  $("reset").onclick = function(){
+		    Snake.restart();
+		    this.blur();
+		  };
+		  $("upSpeed").onclick = function(){
+		    Snake.speedUp(-20);
+		  };
+		  $("downSpeed").onclick = function(){
+		    Snake.speedUp(20);
+		  };
+		</script>
+		</body></center>
+		<div id="footer">
+			<p>Copyright <a href="privacypolicy.html">Privacy policy</a><a href="contactus.html"> Contact us</a><a href="sitemap.html"> Sitemap</a></p>
+    	</div>
+	</div>
+</body>
+</html>
